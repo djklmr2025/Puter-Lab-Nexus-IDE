@@ -1,72 +1,104 @@
-# ⚡ NEXUS AGENT IDE v2 — Puter Lab & Agent Direct Bridge
+# ⚡ NEXUS AGENT IDE v3 — ARKAIOS · ELEMIA · Puter · Claude
 
-Nexus Agent IDE v2 es un entorno de desarrollo integrado interactivo y altamente pulido que funciona como un **puente de ejecución en vivo**. Permite a cualquier Agente de IA externo (como una instancia separada de Gemini, Claude, ChatGPT, Custom GPTs o scripts en Python/Node.js) actuar directamente sobre el navegador de un usuario en tiempo real mediante el SDK seguro de **Puter.js**.
+## 📌 Protocolo de Orquestación y Documentación para IAs / Co-Pilotos
 
----
+Este repositorio (`NEXUS IDE v3`) es un entorno integrado de desarrollo diseñado como una **consola de ejecución y automatización en vivo**. Funciona como un centro de operaciones bidireccional entre Agentes de Inteligencia Artificial (Gemini, Claude, GPTs o bots locales) y la máquina virtual segura de **Puter.js** en el navegador del usuario.
 
-## 🔗 Dirección Pública de la Aplicación
-
-Puedes abrir tu Nexus Lab en pantalla completa o integrarlo en cualquier navegador utilizando el siguiente enlace público:
-*   **Enlace de la App:** [https://ais-pre-2xr7vpfz3gpk7wd46kgea7-53917996317.us-west2.run.app](https://ais-pre-2xr7vpfz3gpk7wd46kgea7-53917996317.us-west2.run.app)
+Este documento está optimizado para que **otros modelos de lenguaje (LLMs) y rutinas de scraping/orquestación** autoprocesen las capacidades y métodos de interacción de este entorno.
 
 ---
 
-## 🚀 ¿Debe ser Humano el Orquestador o la IA puede Conectarse Sola?
+## 🌐 Enlaces Públicos del Ecosistema
 
-### ¡La IA puede conectarse de forma 100% Autónoma!
-
-Si estás chateando en la interfaz web estándar (como Gemini Advanced, Claude.ai, ChatGPT Plus gratis o similar sin plugins de desarrollo), estas plataformas por seguridad imponen un sandbox al navegador de la IA que les impide hacer descargas de red salientes ("outbound requests"). En ese escenario, **tú sirves como el Orquestador/Canal Seguro** (simplemente copiando los bloques `[EXECUTE_JS]` que la IA genera y pegándolos en la interfaz de Nexus).
-
-**SIN EMBARGO**, si usas un entorno con capacidad de ejecución de herramientas ("Tool Calling" / "Function Calling"), puedes conectar a la IA automáticamente sin intermediarios:
-
-1.  **Custom GPTs (ChatGPT):** Puedes crear un ChatGPT personalizado ("GPT") e importar la especificación OpenAPI (que te dejamos abajo) en la sección **Actions**. Con esto, la IA llamará a tu Nexus IDE directamente en segundo plano cada vez que le pidas estructurar tu proyecto.
-2.  **Agentes Locales / Gemini API / Claude API:** Si usas un script local de Python o Node.js con el SDK oficial, puedes proveerle a la IA la función `enviar_comando_nexus` como una herramienta nativa (Function Calling). El modelo decidirá cuándo ejecutar el código y la app de tu navegador se actualizará sola en 3 segundos.
+*   **Aplicación Compartida:** [https://ais-pre-2xr7vpfz3gpk7wd46kgea7-53917996317.us-west2.run.app](https://ais-pre-2xr7vpfz3gpk7wd46kgea7-53917996317.us-west2.run.app)
+*   **Servicio de Desarrollo:** `https://ais-dev-2xr7vpfz3gpk7wd46kgea7-53917996317.us-west2.run.app`
 
 ---
 
-## 📡 Endpoints de la API Segura (CORS Habilitado)
+## 🛡️ Configuración del Gateway Seguro y Credenciales
 
-### 1️⃣ Canal de Mensajes en Lenguaje Natural (Copiloto AI)
-Ideal para que una IA con acceso a red te envíe comandos abstractos y el backend de Nexus compile y ejecute el código resultante por ti.
+El IDE cuenta con integraciones nativas hacia el canal seguro de **ARKAIOS** y auditoría de eventos de **ELEMIA**. Las credenciales por defecto están pre-cargadas en el estado local persistente para uso del equipo:
 
+*   **n8n Webhook Gateway:** `https://arkaios-n8n.onrender.com/webhook/arkaios-gateway`
+*   **Token de Autenticación (Header Auth):** `KaOQ...OdwG` (configurado en headers de autorización)
+*   **Fuentes registradas y autorizadas en ELEMIA:**
+    *   `gemini-lab` (Gemini Lab ARKAIOS)
+    *   `eduacion-libre-proyecto-arkaios.vercel.app` (Portal Educativo)
+    *   `arkaios-n8n.onrender.com` (Servidor n8n secundario)
+    *   `nexus-ide` (Esta consola)
+
+---
+
+## 🤖 Guía de Autoprompt / Inyección del Sistema para IAs Externas
+
+Si eres un modelo de Inteligencia Artificial (por ejemplo, actuando a través del backend `/api/agent` o de una API remota), debes estructurar tus respuestas para que el motor de ejecución evalúe automáticamente tus intenciones de acción. 
+
+### 1️⃣ Ejecución de Scripts Sandbox `[EXECUTE_JS]`
+Cualquier bloque envuelto en las siguientes etiquetas será ejecutado automáticamente en modo asíncrono dentro del contexto del navegador del usuario con acceso total al SDK de Puter y ARKAIOS:
+
+```javascript
+[EXECUTE_JS]
+// Crear un directorio en la nube
+await puter.fs.mkdir('proyectos/v3-module', { createMissingParents: true });
+
+// Guardar archivos
+await puter.fs.write('proyectos/v3-module/index.html', '<h1>ELEMIA Active</h1>', { overwrite: true });
+
+// Desplegar sitio web en su subdominio gratis de Puter
+await puter.hosting.create('elemia-web-site', 'proyectos/v3-module');
+console.log('Sitio web desplegado en Puter con éxito!');
+[/EXECUTE_JS]
+```
+
+### 2️⃣ Disparo de Webhooks de Automatización `[ARK_PAYLOAD]`
+Para interactuar directamente con el motor de n8n o bases de datos vinculadas de Google Sheets sin escribir JS, puedes inyectar un payload JSON puro:
+
+```json
+[ARK_PAYLOAD]
+{
+  "EVENT_TYPE": "IMAGE_REQUEST",
+  "action": "generate_image",
+  "prompt": "cyberpunk robotics station, neon light, isometric art, hyper-detailed",
+  "negativePrompt": "low quality, blurry"
+}
+[/ARK_PAYLOAD]
+```
+
+---
+
+## 📡 Endpoints de la API del Servidor (CORS Activo)
+
+### 1️⃣ `/api/agent` (Post a Lenguaje Natural / Copiloto)
 *   **Método:** `POST`
-*   **URL:** `https://ais-pre-2xr7vpfz3gpk7wd46kgea7-53917996317.us-west2.run.app/api/agent`
-*   **Encabezados:** `Content-Type: application/json`
 *   **Cuerpo (JSON):**
     ```json
     {
-      "message": "Crea una carpeta llamada ELEMIA-v4, escribe un log de auditoría adentro, y despliégala en vivo"
+      "message": "Genera una imagen cyberpunk realista con ARKAIOS"
+    }
+    ```
+*   **Respuesta:** Retorna texto estructurado incluyendo opcionalmente los tags evaluables `[EXECUTE_JS]` o `[ARK_PAYLOAD]`.
+
+### 2️⃣ `/api/agent/queue` (Encolamiento para Inyección Inalámbrica)
+Si un script externo de Node o Python corre en segundo plano, puede encolar comandos en este endpoint. El IDE consulta este endpoint cada 3 segundos y ejecuta las acciones de manera silenciosa y desatendida.
+*   **Método:** `POST`
+*   **Cuerpo (JSON):**
+    ```json
+    {
+      "code": "await puter.kv.set('last_sync', Date.now().toString()); pl('lok', 'Sincronizado vía webhook remoto');",
+      "message": "Comando automatizado de sincronización remota"
     }
     ```
 
 ---
 
-### 2️⃣ Canal de Inyección Directa de JavaScript (Control Remoto)
-Ideal para que el bot inyecte un bloque exacto de código JavaScript para ejecutar en la máquina virtual (Puter.js) de tu navegador.
-
-*   **Método:** `POST`
-*   **URL:** `https://ais-pre-2xr7vpfz3gpk7wd46kgea7-53917996317.us-west2.run.app/api/agent/queue`
-*   **Encabezados:** `Content-Type: application/json`
-*   **Cuerpo (JSON):**
-    ```json
-    {
-      "code": "await puter.fs.mkdir('ELEMIA-v4/memoria', {createMissingParents: true});\nawait puter.kv.set('elemia_status', 'iniciando_modulo_memoria_v2');\nawait puter.fs.write('ELEMIA-v4/memoria/log.txt', 'Sistema de memoria inicializado.');\nconsole.log('✓ Memoria configurada exitosamente!');",
-      "description": "Configurando estructura lógica"
-    }
-    ```
-
----
-
-## 📄 Especificación OpenAPI 3.0 (Para Custom GPTs / Claude Projects / LangChain Agents)
-
-Copia y pega este JSON en el editor de acciones de tu Agente Autónomo externo para otorgarle capacidades de control de hardware de forma inalámbrica sobre Puter.js:
+## 📋 Especificación OpenAPI 3.0 (Para Actions de Custom GPTs y Agents)
 
 ```json
 {
   "openapi": "3.0.0",
   "info": {
     "title": "Nexus Agent Tunnel API",
-    "version": "2.0.0",
+    "version": "3.3.0",
     "description": "API de puente para conectar agentes de IA remotos con el Sandbox de navegador Puter.js del usuario."
   },
   "servers": [
@@ -88,7 +120,7 @@ Copia y pega este JSON en el editor de acciones de tu Agente Autónomo externo p
                 "properties": {
                   "message": {
                     "type": "string",
-                    "description": "La instrucción en texto libre que define el objetivo del proyecto (ej. Crear una landing minimalista y desplegar)."
+                    "description": "Instrucción de voz o texto libre (ej: crea un index.html con un reproductor de música)."
                   }
                 },
                 "required": ["message"]
@@ -98,16 +130,13 @@ Copia y pega este JSON en el editor de acciones de tu Agente Autónomo externo p
         },
         "responses": {
           "200": {
-            "description": "Instrucción recibida y procesada con éxito por el compilador secundario de Nexus.",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "text": {
-                      "type": "string",
-                      "description": "La respuesta textual redactada por la IA co-piloto secundaria de Nexus."
-                    }
+                    "text": { "type": "string" }
                   }
                 }
               }
@@ -118,8 +147,8 @@ Copia y pega este JSON en el editor de acciones de tu Agente Autónomo externo p
     },
     "/api/agent/queue": {
       "post": {
-        "summary": "Inyectar código JavaScript puro directamente en la máquina virtual Puter del usuario",
-        "operationId": "injectDirectCode",
+        "summary": "Encolar código JavaScript para su ejecución inmediata",
+        "operationId": "enqueueCodeExecution",
         "requestBody": {
           "required": true,
           "content": {
@@ -127,14 +156,8 @@ Copia y pega este JSON en el editor de acciones de tu Agente Autónomo externo p
               "schema": {
                 "type": "object",
                 "properties": {
-                  "code": {
-                    "type": "string",
-                    "description": "Código de JavaScript compatible con el SDK global de puter (ej. await puter.fs.write('doc.txt', 'hola');)."
-                  },
-                  "description": {
-                    "type": "string",
-                    "description": "Resumen representativo de lo que realiza esta acción."
-                  }
+                  "code": { "type": "string", "description": "Lógica JS async/await pura utilizando puter o window.ARKAIOS" },
+                  "message": { "type": "string", "description": "Comentario representativo" }
                 },
                 "required": ["code"]
               }
@@ -143,22 +166,7 @@ Copia y pega este JSON en el editor de acciones de tu Agente Autónomo externo p
         },
         "responses": {
           "200": {
-            "description": "Comando encolado con éxito. Se ejecutará en la pantalla del usuario en menos de 3 segundos.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean"
-                    },
-                    "command": {
-                      "type": "object"
-                    }
-                  }
-                }
-              }
-            }
+            "description": "Encolado exitoso"
           }
         }
       }
@@ -169,46 +177,44 @@ Copia y pega este JSON en el editor de acciones de tu Agente Autónomo externo p
 
 ---
 
-## 🛠️ Script de Automatización Local en Python
+## 🐍 Script del Puente Local (Python 3)
 
-Si quieres un asistente autónomo rápido que se ejecute desde tu consola y lea tus archivos para enviarselos a tu Nexus Lab, crea este archivo `bridge.py` y ejecútalo:
+Si deseas orquestar un bot que procese las respuestas de cualquier modelo en tu terminal y las inyecte de vuelta a la ventana web de tu navegador:
 
 ```python
 import requests
 import json
-import time
 
-API_BASE = "https://ais-pre-2xr7vpfz3gpk7wd46kgea7-53917996317.us-west2.run.app"
+URL_QUEUE = "https://ais-pre-2xr7vpfz3gpk7wd46kgea7-53917996317.us-west2.run.app/api/agent/queue"
 
-def inyectar_asistente(codigo, descripcion="Comando automático"):
-    url = f"{API_BASE}/api/agent/queue"
-    payload = {"code": codigo, "description": descripcion}
-    
+def inyectar_codigo(javascript_code, nota="Script automático"):
+    payload = {
+        "code": javascript_code,
+        "message": nota
+    }
     try:
-        r = requests.post(url, json=payload)
+        r = requests.post(URL_QUEUE, json=payload, headers={"Content-Type": "application/json"})
         if r.status_code == 200:
-            print(f"⚡ [Nexus] Ejecutando de forma remota: '{descripcion}'")
-            print(r.json())
+            print("🚀 Sincronizado: código encolado exitosamente.")
         else:
-            print("Error:", r.text)
+            print("❌ Fallo en sincronización:", r.text)
     except Exception as e:
-        print("Fallo de red:", e)
+        print("❌ Error de red:", e)
 
-# Ejemplo de uso: Inyectar un saludo y crear directorios automáticamente
-codigo_puter_js = """
-await puter.fs.mkdir('ELEMIA-ModuloDeAsistencias', {createMissingParents: true});
-await puter.fs.write('ELEMIA-ModuloDeAsistencias/config.json', JSON.stringify({ activo: true, version: '4.0.0' }, null, 2));
-await puter.kv.set('elemia_asistencia_estatus', 'sincronizado');
-console.log('✓ Módulo de ELEMIA inyectado inalámbricamente!');
+# Demo: Crea un log local de auditoría ELEMIA en el Puter virtual del usuario
+programa = """
+await puter.fs.write('ELEMIA_audit_report.txt', 'Auditoría remota de red ejecutada.', { overwrite: true, createMissingParents: true });
+const r = await window.ARKAIOS.elemia('REMOTE_AUDIT', 'python-agent', 'Reporte enviado desatendido');
+console.log('✓ ELEMIA respondió:', r);
 """
 
-inyectar_asistente(codigo_puter_js, "Instalando Módulo de Asistencias de ELEMIA")
+inyectar_codigo(programa, "Generando auditoría ELEMIA vía Python-Agent")
 ```
 
 ---
 
-## 🎨 Especificaciones Tecnológicas de Nexus Lab
-*   **Vite + React (TypeScript):** UI de alta gama con paleta de color Cosmic Slate, contrastes seguros y animaciones fluidas.
-*   **Gemini 2.5 Flash / 1.5 Pro Server-Side integration:** Gestión integrada en el backend para resguardar la firma secreta de las API keys sin exponerlas al cliente web.
-*   **Express Server + CORS:** Backend configurado específicamente con control de acceso global para admitir conexiones cruzadas desde entornos externos externos.
-*   **Puter.js SDK Integrado:** Integración nativa que corre en el contexto de seguridad del usuario en el navegador para resguardar la privacidad e integridad de sus archivos.
+## 🛠️ Tecnologías Empleadas
+
+1.  **Vite + React (TypeScript):** UI ultra responsiva, con visual nocturno optimizado, scanlines decorativos y adaptaciones seguras para dispositivos táctiles.
+2.  **Puter.js SDK (v2):** Acceso instantáneo a storage en la nube, hosting web estático, bases de datos noSQL KV y chats inteligentes libres de keys privadas del lado del navegador.
+3.  **Claude & Gemini API (Integración Full-Stack):** El backend de Express intermedia las consultas para aislar y proteger las firmas y APIs Keys del equipo, mientras que permite inyectar llaves de Claude a nivel de sesión local del navegador si se desea acceso premium personalizado.
