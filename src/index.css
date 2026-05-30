@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  
+  --color-bg-base: #050508;
+  --color-bg-darker: #08080c;
+  --color-bg-panel: #0d0e15;
+  --color-bg-panel-light: #151722;
+  --color-accent-green: #00ff88;
+  --color-accent-blue: #00ccff;
+  --color-accent-orange: #ff6b35;
+  --color-border-dark: #1b1e2e;
+}
+
+/* Custom styles for terminal and scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-dark);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #31364a;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--color-bg-base);
+  color: #c8d8e8;
+  overflow: hidden;
+}
+
+.glow-green {
+  text-shadow: 0 0 10px rgba(0, 255, 136, 0.4);
+}
+
+.glow-blue {
+  text-shadow: 0 0 10px rgba(0, 204, 255, 0.4);
+}
+
+.box-glow-green {
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.15);
+}
+
+.box-glow-blue {
+  box-shadow: 0 0 15px rgba(0, 204, 255, 0.15);
+}

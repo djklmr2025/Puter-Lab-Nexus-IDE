@@ -1,0 +1,12 @@
+{
+  "name": "Puter Lab & Nexus IDE",
+  "description": "A highly polished, interactive IDE and development interface powered by Puter API and Gemini Agent automation.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
