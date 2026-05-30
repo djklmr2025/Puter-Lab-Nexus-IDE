@@ -83,8 +83,54 @@ export default function App() {
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
   // --- INITIALIZATION & SDK BINDING ---
+  // Helper to force dynamic script loading if it fails to load natively
+  const forceLoadPuterSDK = () => {
+    addLog("info", "Iniciando detección e inyección del SDK de Puter.js...");
+    if (window.puter) {
+      const sdk = window.puter;
+      setPuterSDK(sdk);
+      setIsSdkLoading(false);
+      addLog("success", "✓ ¡SDK de Puter.js detectado en memoria! Entorno listo.");
+      showNotification("Puter SDK conectado!");
+      if (sdk.auth && typeof sdk.auth.isSignedIn === "function") {
+        setIsPuterAuthenticated(sdk.auth.isSignedIn());
+        if (sdk.auth.isSignedIn()) {
+          fetchUserInfo(sdk);
+        }
+      }
+      return;
+    }
+
+    const scriptId = "dynamic-puter-sdk";
+    if (!document.getElementById(scriptId)) {
+      const s = document.createElement("script");
+      s.id = scriptId;
+      s.src = "https://js.puter.com/v2/";
+      s.async = true;
+      s.onload = () => {
+        if (window.puter) {
+          const sdk = window.puter;
+          setPuterSDK(sdk);
+          setIsSdkLoading(false);
+          addLog("success", "✓ SDK de Puter.js cargado dinámicamente mediante CDN.");
+          showNotification("Puter SDK inyectado!");
+          if (sdk.auth && typeof sdk.auth.isSignedIn === "function") {
+            setIsPuterAuthenticated(sdk.auth.isSignedIn());
+            if (sdk.auth.isSignedIn()) {
+              fetchUserInfo(sdk);
+            }
+          }
+        }
+      };
+      s.onerror = () => {
+        addLog("error", "Error crítico al inyectar CDN de Puter.js. Intente abrir en pestaña limpia/VPN.");
+      };
+      document.head.appendChild(s);
+    }
+  };
+
   useEffect(() => {
-    // Poll to check if Puter.js is loaded from script in index.html
+    // Initial poll to check for Puter.js loaded natively
     const checkPuterInterval = setInterval(() => {
       if (window.puter) {
         clearInterval(checkPuterInterval);
@@ -93,7 +139,6 @@ export default function App() {
         setIsSdkLoading(false);
         addLog("success", "Puter.js SDK cargado con éxito. Entorno operativo listo.");
         
-        // Check if user is already authenticated
         if (sdk.auth && typeof sdk.auth.isSignedIn === "function") {
           setIsPuterAuthenticated(sdk.auth.isSignedIn());
           if (sdk.auth.isSignedIn()) {
@@ -102,6 +147,14 @@ export default function App() {
         }
       }
     }, 200);
+
+    // Timeout fallback: if not loaded in 1.5s, trigger dynamic injection automatically
+    const fallbackTimeout = setTimeout(() => {
+      if (!window.puter) {
+        addLog("info", "Invocando inyector alternativo de SDK Puter...");
+        forceLoadPuterSDK();
+      }
+    }, 1500);
 
     // Initial log message
     addLog("info", "Iniciando Nexus Agent IDE v2 en puerto simetrizado.");
@@ -123,7 +176,10 @@ export default function App() {
       }
     ]);
 
-    return () => clearInterval(checkPuterInterval);
+    return () => {
+      clearInterval(checkPuterInterval);
+      clearTimeout(fallbackTimeout);
+    };
   }, []);
 
   // Save draft content to localStorage
@@ -214,14 +270,23 @@ export default function App() {
   };
 
   const loginPuter = async () => {
-    if (!puterSDK) {
-      showNotification("Puter SDK no se ha cargado.");
+    let activeSdk = puterSDK;
+    if (!activeSdk && window.puter) {
+      activeSdk = window.puter;
+      setPuterSDK(activeSdk);
+      setIsSdkLoading(false);
+    }
+
+    if (!activeSdk) {
+      showNotification("Intentando re-inyectar Puter...");
+      forceLoadPuterSDK();
       return;
     }
+
     try {
       addLog("info", "Abriendo ventana modal de autenticación de Puter...");
-      await puterSDK.auth.signIn();
-      await fetchUserInfo(puterSDK);
+      await activeSdk.auth.signIn();
+      await fetchUserInfo(activeSdk);
       showNotification("Sincronizado con Puter con éxito");
     } catch (err: any) {
       addLog("error", "Fallo al iniciar sesión en Puter: " + err.message);
@@ -1442,50 +1507,99 @@ Por favor, asegúrate de tener configurada tu **GEMINI_API_KEY** en la barra lat
             </div>
           )}
 
-          {/* QUICK PUTER API REFERENCE VIEW */}
+          {/* QUICK PUTER API REFERENCE & BOT BRIDGE VIEW */}
           {activeApiTab === "api" && (
-            <div className="flex-1 overflow-y-auto p-3 space-y-4 text-xs font-mono leading-relaxed" id="nexus-panel-api-docs">
-              <div className="space-y-2">
-                <span className="font-bold text-[#00ccff] text-[11px] uppercase block border-b border-[#1b1e2e] pb-1">
-                  Filesystem API (fs)
-                </span>
-                <div className="p-2 bg-[#151722]/50 border border-[#1b1e2e] rounded space-y-1 text-[11px]">
-                  <p className="text-[#00ff88] font-bold">fs.write(path, text, options)</p>
-                  <p className="text-slate-400 text-[10px]">Guarda o sobrescribe un archivo en la ruta.</p>
+            <div className="flex-1 overflow-y-auto p-3 space-y-4 text-xs font-mono leading-relaxed bg-[#08080c]" id="nexus-panel-api-docs">
+              
+              {/* External AI Connection Tunnel Info Card */}
+              <div className="p-3 bg-emerald-950/10 border border-emerald-500/20 rounded-lg space-y-2">
+                <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-[11px] uppercase">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  🌐 Canal para IAs Externas
                 </div>
-                <div className="p-2 bg-[#151722]/50 border border-[#1b1e2e] rounded space-y-1 text-[11px]">
-                  <p className="text-[#00ff88] font-bold">fs.read(path) -&gt; Blob</p>
-                  <p className="text-slate-400 text-[10px]">Consulta archivos devueltos como blobs de datos.</p>
+                <p className="text-slate-400 text-[10px] leading-relaxed">
+                  Tu chatbot de Gemini, Claude o ChatGPT externo puede controlar este navegador de forma desatendida mediante estos endpoints:
+                </p>
+
+                <div className="space-y-2 mt-2 pt-2 border-t border-[#1b1e2e]">
+                  <div>
+                    <span className="text-[9px] text-slate-500 uppercase font-bold block">1. Enviar Lenguaje Natural</span>
+                    <div className="flex items-center justify-between gap-1 mt-1 bg-[#151722]/50 p-1 px-1.5 rounded border border-[#1b1e2e]">
+                      <code className="text-[10px] text-[#00ccff] truncate select-all">{window.location.origin}/api/agent</code>
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(`${window.location.origin}/api/agent`);
+                          showNotification("Copiado al portapapeles");
+                        }}
+                        className="text-[9px] text-slate-400 hover:text-white px-1 hover:bg-slate-800 rounded font-bold cursor-pointer"
+                      >
+                        [COPY]
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="text-[9px] text-slate-500 uppercase font-bold block">2. Inyectar JS Directo</span>
+                    <div className="flex items-center justify-between gap-1 mt-1 bg-[#151722]/50 p-1 px-1.5 rounded border border-[#1b1e2e]">
+                      <code className="text-[10px] text-[#00ccff] truncate select-all">{window.location.origin}/api/agent/queue</code>
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(`${window.location.origin}/api/agent/queue`);
+                          showNotification("Copiado al portapapeles");
+                        }}
+                        className="text-[9px] text-slate-400 hover:text-white px-1 hover:bg-slate-800 rounded font-bold cursor-pointer"
+                      >
+                        [COPY]
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div className="p-2 bg-[#151722]/50 border border-[#1b1e2e] rounded space-y-1 text-[11px]">
-                  <p className="text-[#00ff88] font-bold">fs.mkdir(path, options)</p>
-                  <p className="text-slate-400 text-[10px]">Crea carpetas en el árbol lógico de Puter.</p>
+
+                <div className="text-[9px] text-[#ff6b35] bg-orange-950/15 p-1.5 rounded border border-[#ff6b35]/20 mt-2 leading-relaxed">
+                  💡 <strong>¿No tienes bot externo?</strong> Cualquier script en Python o Node.js que envíe un POST a este túnel ejecutará las acciones en este panel en menos de 3 segundos.
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <span className="font-bold text-[#00ccff] text-[11px] uppercase block border-b border-[#1b1e2e] pb-1">
-                  Key-Value Engine (kv)
+              <div className="space-y-2 pt-2">
+                <span className="font-bold text-slate-300 text-[10px] uppercase block border-b border-[#1b1e2e] pb-1">
+                  Machete de Referencia Puter.js
                 </span>
-                <div className="p-2 bg-[#151722]/50 border border-[#1b1e2e] rounded space-y-1 text-[11px]">
-                  <p className="text-amber-400 font-bold">kv.set(key, string_value)</p>
-                  <p className="text-slate-400 text-[10px]">Almacena un dato de cadena accesible por su clave.</p>
+                
+                <div className="space-y-2">
+                  <span className="font-bold text-[#00ccff] text-[10px] uppercase block">
+                    Filesystem API (fs)
+                  </span>
+                  <div className="p-2 bg-[#151722]/50 border border-[#1b1e2e] rounded space-y-1 text-[11px]">
+                    <p className="text-[#00ff88] font-bold">fs.write(path, text, options)</p>
+                    <p className="text-slate-400 text-[10px]">Guarda o sobrescribe un archivo en la ruta.</p>
+                  </div>
+                  <div className="p-2 bg-[#151722]/50 border border-[#1b1e2e] rounded space-y-1 text-[11px]">
+                    <p className="text-[#00ff88] font-bold">fs.mkdir(path)</p>
+                    <p className="text-slate-400 text-[10px]">Crea carpetas en el árbol lógico de Puter.</p>
+                  </div>
                 </div>
-                <div className="p-2 bg-[#151722]/50 border border-[#1b1e2e] rounded space-y-1 text-[11px]">
-                  <p className="text-amber-400 font-bold">kv.get(key) -&gt; Promise</p>
-                  <p className="text-slate-400 text-[10px]">Retorna el valor resuelto.</p>
+
+                <div className="space-y-2 mt-3">
+                  <span className="font-bold text-[#00ccff] text-[10px] uppercase block">
+                    Key-Value Engine (kv)
+                  </span>
+                  <div className="p-2 bg-[#151722]/50 border border-[#1b1e2e] rounded space-y-1 text-[11px]">
+                    <p className="text-amber-400 font-bold">kv.set(key, string_value)</p>
+                    <p className="text-slate-400 text-[10px]">Almacena un dato de cadena accesible por su clave.</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2 mt-3">
+                  <span className="font-bold text-[#00ccff] text-[10px] uppercase block">
+                    Instant Hosting (hosting)
+                  </span>
+                  <div className="p-2 bg-[#151722]/50 border border-[#1b1e2e] rounded space-y-1 text-[11px]">
+                    <p className="text-cyan-400 font-bold">hosting.create(sub, folder)</p>
+                    <p className="text-slate-400 text-[10px]">Activa el despliegue del directorio a puter.site gratuitamente.</p>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <span className="font-bold text-[#00ccff] text-[11px] uppercase block border-b border-[#1b1e2e] pb-1">
-                  Instant CD hosting (hosting)
-                </span>
-                <div className="p-2 bg-[#151722]/50 border border-[#1b1e2e] rounded space-y-1 text-[11px]">
-                  <p className="text-cyan-400 font-bold">hosting.create(sub, folder)</p>
-                  <p className="text-slate-400 text-[10px]">Activa el despliegue del directorio a puter.site gratuitamente.</p>
-                </div>
-              </div>
             </div>
           )}
 

@@ -1,12 +1,6 @@
 {
-  "name": "Puter Lab & Nexus IDE",
-  "description": "A highly polished, interactive IDE and development interface powered by Puter API and Gemini Agent automation.",
-  "requestFramePermissions": [
-    "camera",
-    "microphone",
-    "geolocation"
-  ],
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
+  "name": "Nexus Agent IDE",
+  "description": "An interactive web IDE and execution sandbox connecting external AI chat agents directly to Puter.js browser... Code changes sync in real-time.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
