@@ -13,7 +13,27 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 3000;
 
+// Enable CORS middleware so external chat agents, custom GPTs, or curl can call our endpoint directly
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, DELETE");
+  if (req.method === "OPTIONS") {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
+
 app.use(express.json());
+
+// In-memory queue to synchronize external AI instructions with the browser execution sandbox (Puter.js)
+interface QueuedCommand {
+  id: string;
+  code: string;
+  message: string;
+}
+let pendingCommands: QueuedCommand[] = [];
 
 // Lazy-loaded GenAI client to prevent startup failure if apiKey is delayed
 let aiClient: GoogleGenAI | null = null;
@@ -27,6 +47,28 @@ function getGemini(): GoogleGenAI {
   }
   return aiClient;
 }
+
+// REST API endpoint for retrieval of pending execution commands by the client web IDE
+app.get("/api/agent/queue", (req, res) => {
+  res.json({ commands: pendingCommands });
+  pendingCommands = []; // Consume the queue
+});
+
+// REST API endpoint to post a custom JS command directly to the browser queue
+app.post("/api/agent/queue", (req, res) => {
+  const { code, description } = req.body;
+  if (!code) {
+    res.status(400).json({ error: "El campo 'code' (JavaScript) es obligatorio." });
+    return;
+  }
+  const newCmd: QueuedCommand = {
+    id: "cmd-" + Date.now() + Math.floor(Math.random() * 1000),
+    code,
+    message: description || "Comando manual externo"
+  };
+  pendingCommands.push(newCmd);
+  res.json({ success: true, command: newCmd });
+});
 
 // REST API endpoint for the Nexus Gemini Agent
 app.post("/api/agent", async (req, res) => {
@@ -98,7 +140,22 @@ Reglas de respuesta de NEXUS:
       }
     });
 
-    res.json({ text: response.text });
+    const responseText = response.text || "";
+
+    // Automatically parse and queue any generated EXECUTE_JS code block to the pendingCommands queue
+    const rx = /\[EXECUTE_JS\]([\s\S]*?)\[\/EXECUTE_JS\]/g;
+    let match;
+    while ((match = rx.exec(responseText)) !== null) {
+      if (match[1]) {
+        pendingCommands.push({
+          id: "cmd-" + Date.now() + Math.floor(Math.random() * 1000),
+          code: match[1].trim(),
+          message: message
+        });
+      }
+    }
+
+    res.json({ text: responseText });
   } catch (error: any) {
     console.error("Error in Agent API Route:", error);
     res.status(500).json({ error: error.message || "Ocurrió un error inesperado al invocar al Agente." });

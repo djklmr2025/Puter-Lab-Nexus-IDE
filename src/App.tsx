@@ -131,6 +131,41 @@ export default function App() {
     localStorage.setItem("nexus_editor_draft", editorContent);
   }, [editorContent]);
 
+  // Poll back-end command queue for external agent instructions
+  useEffect(() => {
+    const pollQueue = async () => {
+      try {
+        const res = await fetch("/api/agent/queue");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.commands && data.commands.length > 0) {
+            for (const cmd of data.commands) {
+              addLog("ai", `⚡ [AGENTE EXTERNO] Comando remoto recibido: "${cmd.message}"`);
+              showNotification(`⚙ Comando remoto en proceso...`);
+              
+              // Push remote confirmation log inside the visual chat
+              const remoteMsg: ChatMessage = {
+                id: "remote-" + Date.now() + Math.random(),
+                role: "assistant",
+                content: `🤖 **[Control Remoto / Agente Externo]**\nEjecutando script de automatización para resolver:\n_"${cmd.message}"_`,
+                timestamp: new Date().toLocaleTimeString()
+              };
+              setChatHistory(prev => [...prev, remoteMsg]);
+              
+              // Run the generated custom sandbox code block!
+              executeSandboxCode(cmd.code);
+            }
+          }
+        }
+      } catch (err) {
+        // Fail silently during background polling to keep logs perfectly clean
+      }
+    };
+
+    const interval = setInterval(pollQueue, 3000);
+    return () => clearInterval(interval);
+  }, [puterSDK, isPuterAuthenticated, currentPath, editorContent]);
+
   // Handle logging scroll & Chat bottom scrolling
   useEffect(() => {
     terminalBottomRef.current?.scrollIntoView({ behavior: "smooth" });
