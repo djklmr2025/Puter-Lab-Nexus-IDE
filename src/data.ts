@@ -1,157 +1,244 @@
-export const DEFAULT_SCRIPT = `// NEXUS AGENT IDE — Puter.js Script
-// ===================================
-// Pruebas directas de Puter.js SDK.
-// Para ejecutar, pulsa el botón "▶ EJECUTAR" o (Ctrl + Enter)
-// ===================================
+export const DEFAULT_SCRIPT = `// NEXUS IDE v3 — ARKAIOS + ELEMIA + Puter + Claude
+// ==============================================
+// INTEGRACIÓN ARKAIOS:
+//   window.ARKAIOS.fire(payload)       → dispara webhook n8n
+//   window.ARKAIOS.imageGen(prompt)    → genera imagen via ARKAIOS
+//   window.ARKAIOS.edu(action, data)   → petición educativa
+//   window.ARKAIOS.elemia(event, src)  → clasifica con ELEMIA
+//
+// PUTER FS (sin API key propia):
+//   puter.fs.write / read / mkdir / readdir
+//   puter.kv.set / get / list
+//   puter.ai.chat (500+ modelos GRATIS)
+//   puter.hosting.create → .puter.site
+//
+// Ctrl+S = guardar | Ctrl+Enter = ejecutar
+// ==============================================
 
-async function testPuter() {
-  console.log("¡Inicializando entorno Puter Lab! 🚀");
-  
-  // 1. Crear carpeta de pruebas
-  const folderName = "puter-lab-docs";
-  await puter.fs.mkdir(folderName, { createMissingParents: true });
-  console.log("✓ Carpeta creada: " + folderName);
-  
-  // 2. Escribir un archivo
-  const filePath = folderName + "/welcome.txt";
-  await puter.fs.write(filePath, "Hola mundo desde Puter Lab & Nexus IDE. " + new Date().toISOString(), { overwrite: true });
-  console.log("✓ Archivo welcome.txt escrito en: " + filePath);
-  
-  // 3. Registrar un valor en KV store
-  await puter.kv.set("ultimo_test", new Date().toLocaleString());
-  const actualVal = await puter.kv.get("ultimo_test");
-  console.log("✓ Key-Value registrado con éxito: ultimo_test = " + actualVal);
-  
-  console.log("--- ¡Entorno de prueba listo! ---");
+// Ejemplo: generar imagen via ARKAIOS y guardarla en Puter
+async function ejemplo() {
+  console.log("Iniciando flujo de prueba de API...");
+
+  // 1. Clasificar el inicio del evento con ELEMIA
+  const ev = await window.ARKAIOS.elemia('IMAGE_REQUEST_START', 'nexus-ide');
+  console.log('ELEMIA clasificó inicio:', ev.classification || 'Evento encolado');
+
+  // 2. Generar imagen via webhook ARKAIOS → ELEMIA → ImageGen
+  const img = await window.ARKAIOS.imageGen(
+    'ciudad cyberpunk al amanecer, neon violet, arte digital, 4k'
+  );
+  console.log('Imagen generada:', img.ok || img.success ? 'OK' : 'ERROR/MOCK');
+
+  // 3. Si hay base64 o respuesta exitosa, registrar en Puter KV
+  await puter.kv.set('ultimo_status_remoto', 'completado_sin_errores');
+  console.log('Sincronización de Puter KV completada.');
 }
 
-testPuter();`;
+ejemplo();`;
 
-export const TEMPLATES = {
-  landing: `// TEMPLATE: Landing Page + Deploy Automático
+export const SNIPS: Record<string, string> = {
+  ark_fire: `// Disparar webhook ARKAIOS directamente
+const resp = await window.ARKAIOS.fire({
+  EVENT_TYPE: 'CUSTOM_EVENT',
+  NOTES: 'Enviado desde NEXUS IDE',
+  data: { clave: 'valor' }
+});
+console.log('ARKAIOS respondió:', resp);`,
+
+  ark_image: `// Generar imagen via ARKAIOS → n8n → ImageGen API
+const img = await window.ARKAIOS.imageGen(
+  'ciudad cyberpunk al amanecer, neon violet, arte digital, 4k',
+  'low quality, blurry, distorted'
+);
+if (img.ok && img.image_base64) {
+  await puter.fs.write('img_resultado.b64', img.image_base64, { overwrite: true, createMissingParents: true });
+  console.log('Imagen guardada en Puter FS');
+  console.log('Autostart URL:', img.autostart_url);
+}`,
+
+  ark_edu: `// Petición educativa via ARKAIOS → EduPortal
+const resp = await window.ARKAIOS.edu('generate_essay', {
+  apiKey: 'aek_tu-clave',
+  subject: 'Historia',
+  grade: '6to primaria',
+  topic: 'La Revolución Industrial'
+});
+console.log('EDU response:', resp);`,
+
+  ark_elemia: `// Clasificar evento con ELEMIA via ARKAIOS/n8n
+const ev = await window.ARKAIOS.elemia(
+  'CUSTOM_EVENT',
+  'nexus-ide',
+  'Evento generado desde el IDE'
+);
+console.log('ELEMIA clasificó:', ev);`,
+
+  ark_nexus: `// Hablar directamente con el Nexus Lab en Render
+const resp = await window.ARKAIOS.nexusAgent(
+  'Crea un archivo test.html con un contador en JavaScript',
+  { projectPath: '/mi-proyecto' }
+);
+console.log('Nexus Lab respondió:', resp);`,
+
+  fs_write: `await puter.fs.write('archivo.txt', 'Contenido del archivo', { overwrite: true, createMissingParents: true });`,
+
+  fs_read: `const blob = await puter.fs.read('archivo.txt');
+console.log(await blob.text());`,
+
+  fs_mkdir: `await puter.fs.mkdir('carpeta', { createMissingParents: true });`,
+
+  kv_set: `await puter.kv.set('clave', JSON.stringify({ dato: 'valor', ts: Date.now() }));`,
+
+  ai_chat: `const r = await puter.ai.chat('Hola', { model: 'claude-3-5-sonnet' });
+console.log(r.message.content[0].text);`,
+
+  host_create: `await puter.hosting.create('mi-app', 'ruta/carpeta');
+console.log('LIVE: https://mi-app.puter.site');`
+};
+
+export const TPLS: Record<string, string> = {
+  full_pipeline: `// PIPELINE COMPLETO: ARKAIOS → ImageGen → Puter FS → Deploy
 (async () => {
-  console.log("Generando Landing Page...");
-  const appFolder = "landing-app-" + Date.now();
+  console.log('🚀 Iniciando pipeline...');
   
-  // Crear carpeta
-  await puter.fs.mkdir(appFolder, { createMissingParents: true });
+  // 1. Generar imagen via ARKAIOS
+  const img = await window.ARKAIOS.imageGen(
+    'portada de app cyberpunk, gradiente púrpura y cyan, futurista, profesional'
+  );
+  console.log('ImageGen ARKAIOS:', img.ok ? '✅ OK' : '❌ ERROR');
   
-  // Escribir HTML + CSS (Tailwind CSS integrado)
-  const htmlContent = \`<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Puter Lab Startup Hub</title>
-    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Space Grotesk', sans-serif; }
-    </style>
-</head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between">
-    
-    <header class="max-w-6xl mx-auto w-full px-6 py-6 flex justify-between items-center">
-        <div class="text-emerald-400 font-bold text-xl tracking-wider">⚡ PUTER_LAB</div>
-        <a href="https://puter.com" target="_blank" class="text-slate-400 hover:text-white transition text-sm">Puter Homepage</a>
-    </header>
-
-    <main class="max-w-4xl mx-auto px-6 text-center py-20 flex-1 flex flex-col justify-center">
-        <span class="text-xs font-mono uppercase tracking-[0.2em] text-emerald-400 mb-4 inline-block bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">LIVE HOSTED ON PUTER.SITE</span>
-        <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 bg-gradient-to-r from-white via-slate-100 to-emerald-400 bg-clip-text text-transparent">
-            La Próxima Era del Hosting Descentralizado
-        </h1>
-        <p class="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
-            Esta landing page fue creada, guardada en un sistema de archivos en la nube y puesta en producción directamente mediante Puter.js SDK.
-        </p>
-        <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            <button onclick="alert('¡Gracias por registrarte! Puter.kv persistirá tu interés.')" class="bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-bold px-8 py-3 rounded-lg transition shadow-lg shadow-emerald-500/20 cursor-pointer">
-                Comenzar de Inmediato
-            </button>
-            <a href="https://developer.puter.com" target="_blank" class="border border-slate-700 hover:border-slate-500 text-slate-200 px-8 py-3 rounded-lg transition flex items-center justify-center">
-                Documentación SDK
-            </a>
-        </div>
-    </main>
-
-    <footer class="max-w-6xl mx-auto w-full px-6 py-8 border-t border-slate-900 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-600 gap-4">
-        <div>© \${new Date().getFullYear()} Puter Lab & Nexus IDE. Creado con amor.</div>
-        <div class="flex gap-4">
-            <span>Power of Sandbox filesystem</span>
-            <span>•</span>
-            <span>Instant CD</span>
-        </div>
-    </footer>
-
-</body>
-</html>\`;
-
-  await puter.fs.write(appFolder + "/index.html", htmlContent, { overwrite: true });
-  console.log("✓ Archivo HTML guardado en Puter FS.");
-
-  // Configurar Hosting Gratuito instantáneo
-  const sub = "startup-" + Math.floor(Math.random() * 9000 + 1000);
-  const site = await puter.hosting.create(sub, appFolder);
+  // 2. Crear proyecto en Puter FS
+  const proj = 'arkaios-app-' + Date.now();
+  await puter.fs.mkdir(proj, { createMissingParents: true });
   
-  console.log("🚀 ¡DEPLEGADO CON ÉXITO!");
-  console.log("URL de tu sitio web: " + site.url);
-})();`,
-
-  kvdb: `// TEMPLATE: Base de Datos KV CRUD con Puter.kv
-(async () => {
-  console.log("--- Inicializando Base de Datos Key-Value ---");
-  
-  // Definir clave principal de nuestra base de datos
-  const DB_KEY = "nexus_db_tasks";
-  
-  // 1. Crear un estado de tareas inicial
-  const demoTasks = [
-    { id: 1, text: "Configurar conexión Puter.js", done: true },
-    { id: 2, text: "Habilitar soporte Gemini AI", done: true },
-    { id: 3, text: "Desplegar primera landing", done: false }
-  ];
-  
-  // Guardar en la KV
-  await puter.kv.set(DB_KEY, JSON.stringify(demoTasks));
-  console.log("✓ Tareas predeterminadas inicializadas en: " + DB_KEY);
-  
-  // 2. Leer datos nuevamente para confirmar escritura
-  const rawData = await puter.kv.get(DB_KEY);
-  const tasks = JSON.parse(rawData);
-  console.log("✓ Datos recuperados de KV Store:");
-  tasks.forEach(t => {
-    console.log(\`  [\${t.done ? "✓" : " "}] \${t.text} (ID: \${t.id})\`);
-  });
-  
-  // 3. Editar una tarea (marcar ID 3 como completado)
-  const updatedTasks = tasks.map(t => t.id === 3 ? { ...t, done: true } : t);
-  await puter.kv.set(DB_KEY, JSON.stringify(updatedTasks));
-  console.log("✓ Tarea 3 modificada y guardada en KV.");
-  
-  // 4. Mostrar estado final
-  const rawFinal = await puter.kv.get(DB_KEY);
-  console.log("✓ Listado Actualizado: " + rawFinal);
-})();`,
-
-  aimodels: `// TEMPLATE: Puter.ai API (Chat multi-modelo gratis)
-(async () => {
-  console.log("Consultando con puter.ai...");
-  
-  try {
-    const prompt = "¿Cuáles son las 3 ventajas principales de usar Puter.js en aplicaciones frontend?";
-    console.log("Enviando Prompt: '" + prompt + "' a claude-3-5-sonnet...");
-    
-    // Puter.ai permite acceder a múltiples modelos libremente usando tu propia cuenta Puter.
-    const response = await puter.ai.chat(prompt, {
-      model: "claude-3-5-sonnet"
-    });
-    
-    console.log("--- RESPUESTA DE LA IA ---");
-    console.log(response.message.content[0].text);
-    console.log("------------------------");
-    
-  } catch (err) {
-    console.error("Error al consultar puter.ai:", err);
+  // 3. Guardar imagen si existe
+  if (img.image_base64) {
+    await puter.fs.write(proj + '/hero.b64', img.image_base64, { overwrite: true });
+    console.log('✅ Imagen guardada en Puter FS');
   }
-})();`
+  
+  // 4. Generar HTML con puter.ai (sin API key)
+  const html = await puter.ai.chat(
+    'Escribe solo el HTML+CSS de una landing page cyberpunk para una app de IA. Usa cyan y purple. Sin JS externo.',
+    { model: 'claude-3-5-sonnet' }
+  );
+  const htmlContent = html.message.content[0].text.replace(/\\\`\\\`\\\`html?/g,'').replace(/\\\`\\\`\\\`/g,'').trim();
+  await puter.fs.write(proj + '/index.html', htmlContent, { overwrite: true });
+  
+  // 5. Guardar metadata en KV
+  await puter.kv.set('ark:' + proj, JSON.stringify({
+    ts: new Date().toISOString(), imageOk: img.ok, autostartUrl: img.autostart_url
+  }));
+  
+  // 6. Deploy
+  await puter.hosting.create(proj, proj);
+  console.log('🌐 LIVE: https://' + proj + '.puter.site');
+  
+  // 7. Notificar a ELEMIA
+  await window.ARKAIOS.elemia('DEPLOY_COMPLETADO', 'nexus-ide', 'App desplegada: ' + proj);
+  console.log('✅ Pipeline completado.');
+})();`,
+
+  image_to_web: `// ImageGen ARKAIOS → guardar en Puter → crear página con la imagen
+(async () => {
+  const prompt = prompt('¿Qué imagen generar?', 'ciudad futurista con IA, neon, 4k') || 'ciudad futurista';
+  
+  // Generar via ARKAIOS
+  const img = await window.ARKAIOS.imageGen(prompt);
+  if (!img.ok) { console.error('ImageGen falló:', img); return; }
+  
+  // Crear HTML que muestra la imagen
+  const html = \`<!DOCTYPE html><html>
+<head><meta charset="UTF-8"><title>\${prompt}</title>
+<style>body{margin:0;background:#030306;display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:1rem;font-family:monospace;color:#00ff88}
+img{max-width:90vw;max-height:80vh;border:1px solid #00ff8833;border-radius:4px}
+p{font-size:.8rem;color:#445566}\${''}</style></head>
+<body><img src="data:image/png;base64,\${img.image_base64}" alt="\${prompt}">
+<p>Generado por ARKAIOS · \${new Date().toLocaleString()}</p></body></html>\`;
+  
+  const slug = 'img-' + Date.now();
+  await puter.fs.mkdir(slug, { createMissingParents: true });
+  await puter.fs.write(slug + '/index.html', html, { overwrite: true });
+  await puter.hosting.create(slug, slug);
+  console.log('🌐 Imagen online: https://' + slug + '.puter.site');
+})();`,
+
+  elemia_monitor: `// Monitor ELEMIA: registrar y clasificar eventos en tiempo real
+const SOURCES_AUTH = ['gemini-lab','eduacion-libre-proyecto-arkaios.vercel.app','arkaios-n8n.onrender.com','nexus-ide'];
+
+async function monitorear(event, source, notes) {
+  const authorized = SOURCES_AUTH.includes(source);
+  console.log(\`[\${authorized ? '✅ AUTH' : '⚠️ DESCONOCIDO'}] \${event} desde \${source}\`);
+  
+  // Enviar a ELEMIA via ARKAIOS
+  const result = await window.ARKAIOS.elemia(event, source, notes);
+  
+  // Guardar en KV para historial
+  const key = 'elemia:' + Date.now();
+  await puter.kv.set(key, JSON.stringify({ event, source, authorized, result, ts: new Date().toISOString() }));
+  return result;
+}
+
+// Simular eventos
+(async () => {
+  await monitorear('USER_LOGIN', 'nexus-ide', 'Login desde IDE');
+  await monitorear('IMAGE_REQUEST', 'gemini-lab', 'Petición imagen');
+  await monitorear('UNKNOWN_ACCESS', 'ip-externa-123', 'Acceso no autorizado');
+  const keys = await puter.kv.list();
+  console.log('Eventos ELEMIA en KV:', keys.filter(k => k.startsWith('elemia:')).length);
+})();`,
+
+  bridge_python: `#!/usr/bin/env python3
+# ============================================================
+# NEXUS BRIDGE — Puente Python local para ARKAIOS
+# Escucha tus respuestas de Claude y las reenvía al webhook
+# ============================================================
+# Uso: python3 nexus_bridge.py
+# Luego pon el texto de Claude en el prompt, ctrl+D para enviar
+# ============================================================
+import re, sys, json, requests
+
+ARKAIOS_WEBHOOK = "TU_WEBHOOK_URL"  # Pega la URL aquí
+ARKAIOS_TOKEN   = "TU_TOKEN"        # Tu Header Auth token
+
+def extract_payload(text):
+    """Extrae bloques [ARK_PAYLOAD]...[/ARK_PAYLOAD] del texto de Claude"""
+    matches = re.findall(r'\\[ARK_PAYLOAD\\]([\\s\\S]*?)\\[/ARK_PAYLOAD\\]', text)
+    payloads = []
+    for m in matches:
+        try:
+            payloads.append(json.loads(m.strip()))
+        except:
+            payloads.append({"raw": m.strip(), "EVENT_TYPE": "RAW_COMMAND"})
+    return payloads
+
+def fire(payload):
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": ARKAIOS_TOKEN
+    }
+    r = requests.post(ARKAIOS_WEBHOOK, json=payload, headers=headers, timeout=30)
+    return r.json()
+
+if __name__ == "__main__":
+    print("NEXUS BRIDGE activo. Pega respuesta de Claude (ctrl+D para enviar):")
+    text = sys.stdin.read()
+    payloads = extract_payload(text)
+    if not payloads:
+        print("No se encontraron bloques [ARK_PAYLOAD] en el texto.")
+    for p in payloads:
+        print(f"Disparando: {json.dumps(p)[:80]}...")
+        result = fire(p)
+        print(f"Respuesta ARKAIOS: {result}")`,
+
+  n8n_node: `// NODO n8n ADICIONAL: recibir instrucciones del NEXUS IDE → reenviar al Nexus Lab
+// Agregar este nodo al workflow ARKAIOS v3.3
+// Posición sugerida: después del Router ARKAIOS, rama para EVENT_TYPE = 'NEXUS_IDE_EVENT'
+{
+  "parameters": {
+    "jsCode": "// Nodo: Proxy NEXUS IDE → Nexus Lab\\\\nconst body = $('Router ARKAIOS').first().json;\\\\nconst nexusUrl = 'https://ais-pre-2xr7vpfz3gpk7wd46kgea7-53917996317.us-west2.run.app';\\\\n\\\\n// Solo procesar si viene del IDE\\\\nif (body._source !== 'nexus-ide') return [];\\\\n\\\\nreturn [{ json: {\\\\n  _nexusUrl: nexusUrl + '/api/agent',\\\\n  _nexusPayload: {\\\\n    message: body.NOTES || body.message || '',\\\\n    context: body.data || {},\\\\n    source: 'nexus-ide-via-arkaios',\\\\n    ts: new Date().toISOString()\\\\n  }\\\\n}}];",
+    "type": "n8n-nodes-base.code",
+    "name": "NEXUS IDE → Nexus Lab Proxy"
+  }
+}`
 };
