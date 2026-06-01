@@ -2,19 +2,12 @@
 import React, { useState } from 'react';
 
 interface CanvasContext {
-  // Define la estructura de tu contexto del canvas aquí
-  // Esto debería coincidir con lo que `ai-assistant.js` espera.
   elements: Array<any>;
   connections: Array<any>;
-  viewport: any; // o define una interfaz más específica
-  // ... otros datos relevantes del canvas
+  viewport: any;
 }
 
-// Propiedades que el componente AIAssistant podría recibir
 interface AIAssistantProps {
-  // Función para obtener el estado actual del canvas
-  // En una aplicación real, esta función se pasaría desde el componente padre (e.g., App.tsx)
-  // para que AIAssistant pueda obtener el estado real del editor.
   getCanvasContext: () => CanvasContext;
 }
 
@@ -36,16 +29,12 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ getCanvasContext }) => {
 
     try {
       const currentCanvasContext = getCanvasContext();
-
-      // TODO: Reemplaza esta URL con la URL de tu endpoint ai-assistant.js desplegado
-      const aiAssistantEndpointUrl = 'https://your-vercel-domain.com/api/ai-assistant';
+      const aiAssistantEndpointUrl = 'https://your-vercel-domain.com/api/ai-assistant'; // Placeholder
 
       const response = await fetch(aiAssistantEndpointUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Si tu endpoint requiere autenticación, añade el token aquí
-          // 'Authorization': `Bearer YOUR_AUTH_TOKEN`,
         },
         body: JSON.stringify({
           message: userMessage,
@@ -56,7 +45,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ getCanvasContext }) => {
       if (response.ok) {
         const data = await response.json();
         setAiResponse(data.reply);
-        setUserMessage(''); // Limpiar el input después de enviar
+        setUserMessage('');
       } else {
         const errorData = await response.json();
         setError(`Error del asistente: ${errorData.error || response.statusText}`);

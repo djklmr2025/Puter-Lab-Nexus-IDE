@@ -1,4 +1,5 @@
 import AIAssistant from './AIAssistant';
+import AIAssistant from './AIAssistant';
 import React, { useState, useEffect, useRef } from "react";
 import { 
   Folder, 
@@ -1286,6 +1287,8 @@ Responde de forma concisa en español de manera profesional y optimiza la automa
     <div className="h-screen w-screen flex flex-col overflow-hidden scanlines bg-[#030306] select-none text-[#c8d8e8]">
       <AIAssistant getCanvasContext={serializeCanvasState} />
 
+      <AIAssistant getCanvasContext={serializeCanvasState} />
+
       
       {/* BOOT LOADING OVERLAY */}
       {isBooting && (
@@ -1935,3 +1938,32 @@ const serializeCanvasState = () => {
 
 // Example of how you might call it (for debugging or direct use):
 // console.log('Serialized Canvas State:', serializeCanvasState());
+
+
+const serializeCanvasState = () => {
+  return {
+    elements: [
+      { id: 'start_node', type: 'input', position: { x: 100, y: 100 }, data: { label: 'Inicio de Flujo' }, style: { backgroundColor: '#DDEEFF', borderColor: '#4CAF50' } },
+      { id: 'process_a', type: 'default', position: { x: 300, y: 150 }, data: { label: 'Proceso de Datos A' }, style: { backgroundColor: '#FFEDCC', borderColor: '#FFC107' } },
+      { id: 'decision_x', type: 'default', position: { x: 200, y: 300 }, data: { label: 'Decisión X' }, style: { backgroundColor: '#FFE0B2', borderColor: '#FF9800' } },
+      { id: 'output_node', type: 'output', position: { x: 500, y: 250 }, data: { label: 'Salida Final' }, style: { backgroundColor: '#CCFFCC', borderColor: '#8BC34A' } }
+    ],
+    connections: [
+      { id: 'e1-2', source: 'start_node', target: 'process_a', type: 'step', label: 'Iniciar' },
+      { id: 'e2-3', source: 'process_a', target: 'decision_x', type: 'default', label: 'Resultado A' },
+      { id: 'e3-4-yes', source: 'decision_x', target: 'output_node', type: 'smoothstep', label: 'Sí' },
+      { id: 'e3-4-no', source: 'decision_x', target: 'start_node', type: 'straight', label: 'No (Reiniciar)' }
+    ],
+    viewport: {
+      x: -50,
+      y: -50,
+      zoom: 1.1
+    },
+    customSettings: {
+      gridEnabled: true,
+      snapToGrid: true,
+      backgroundColor: '#F5F5F5'
+    },
+    lastModified: new Date().toISOString()
+  };
+};
