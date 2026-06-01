@@ -1884,3 +1884,54 @@ const serializeCanvasState = () => {
     lastModified: new Date().toISOString()
   };
 };
+
+
+// In a real React application, you would typically use hooks provided by your
+// diagramming library (e.g., `useReactFlow`, `useNodes`, `useEdges`, `useViewport` from `react-flow-renderer`)
+// or a context API to access the current state of the canvas.
+
+const serializeCanvasState = () => {
+  // This is an illustrative implementation. In a live application,
+  // you would retrieve the actual state from your canvas component.
+  // For example, if you were using `react-flow-renderer`:
+  // const { getNodes, getEdges, getViewport } = useReactFlow();
+  // const nodes = getNodes();
+  // const edges = getEdges();
+  // const viewport = getViewport();
+
+  // For demonstration purposes, we'll return a richer, but still static,
+  // representation of a potential canvas state.
+  return {
+    // Example nodes (elements) with common properties
+    elements: [
+      { id: 'start_node', type: 'input', position: { x: 100, y: 100 }, data: { label: 'Inicio de Flujo' }, style: { backgroundColor: '#DDEEFF', borderColor: '#4CAF50' } },
+      { id: 'process_a', type: 'default', position: { x: 300, y: 150 }, data: { label: 'Proceso de Datos A' }, style: { backgroundColor: '#FFEDCC', borderColor: '#FFC107' } },
+      { id: 'decision_x', type: 'default', position: { x: 200, y: 300 }, data: { label: 'Decisión X' }, style: { backgroundColor: '#FFE0B2', borderColor: '#FF9800' } },
+      { id: 'output_node', type: 'output', position: { x: 500, y: 250 }, data: { label: 'Salida Final' }, style: { backgroundColor: '#CCFFCC', borderColor: '#8BC34A' } }
+    ],
+    // Example connections (edges) between elements
+    connections: [
+      { id: 'e1-2', source: 'start_node', target: 'process_a', type: 'step', label: 'Iniciar' },
+      { id: 'e2-3', source: 'process_a', target: 'decision_x', type: 'default', label: 'Resultado A' },
+      { id: 'e3-4-yes', source: 'decision_x', target: 'output_node', type: 'smoothstep', label: 'Sí' },
+      { id: 'e3-4-no', source: 'decision_x', target: 'start_node', type: 'straight', label: 'No (Reiniciar)' }
+    ],
+    // Example viewport information
+    viewport: {
+      x: -50,
+      y: -50,
+      zoom: 1.1 // Current zoom level
+    },
+    // You might also include custom data or settings specific to your diagram
+    customSettings: {
+      gridEnabled: true,
+      snapToGrid: true,
+      backgroundColor: '#F5F5F5'
+    },
+    // Timestamps for last modification
+    lastModified: new Date().toISOString()
+  };
+};
+
+// Example of how you might call it (for debugging or direct use):
+// console.log('Serialized Canvas State:', serializeCanvasState());
