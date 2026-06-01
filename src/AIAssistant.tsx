@@ -29,7 +29,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ getCanvasContext }) => {
 
     try {
       const currentCanvasContext = getCanvasContext();
-      const aiAssistantEndpointUrl = 'https://your-vercel-domain.com/api/ai-assistant'; // Placeholder
+      const aiAssistantEndpointUrl = 'https://[YOUR_FLOW_DIAGRAM_CREATOR_DEPLOYMENT_URL].vercel.app/api/ai-assistant'; // TODO: Replace with your actual Vercel deployment URL // Placeholder
 
       const response = await fetch(aiAssistantEndpointUrl, {
         method: 'POST',
